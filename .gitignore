@@ -1,0 +1,14 @@
+_minted-main
+*.gz
+*.bbl
+*.log
+*.xml
+main-blx.bib
+*.aux
+*.blg
+*.fls
+*.out
+*.fdb_latexmk
+*.xdv
+.vscode
+*.toc

@@ -1,0 +1,94 @@
+\documentclass{hw-template}
+\usepackage[backend=bibtex]{biblatex}
+\usepackage{csquotes}
+\addbibresource{ref.bib}
+\nocite{*}
+\usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{lipsum}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{minted}
+\usepackage[shortlabels]{enumitem}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+
+% Set lang to spanish
+\usepackage[spanish]{babel}
+
+\pgfplotsset{compat=1.18}
+
+\newcommand*{\course}{Lenguajes Formales y Automatas (CM0081)}
+\newcommand*{\assignment}{Laboratorio II}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    En este laboratorio se discute sobre la verificación de programas en representación intermedia de LLVM, el cual es un lenguaje de bajo nivel que se utiliza para representar programas de lenguajes de alto nivel, es un lenguaje que permite a los compiladores realizar optimizaciones de código. \\
+    Se utiliza la herramienta formal \textit{VeLLVM} creada por \textit{DeepSpec} para verificar programas en representación intermedia de LLVM. \\
+    Se discute la motivación del uso de las herramientas mencionadas, en los lenguajes mencionados. \\ 
+    Se discute la posibilidad de verificar programas que planteen problemas de teoria de numeros, ecuaciones diferenciales y grafos. \\
+    Se discute la posibilidad de revisar y estudiar formalmente sobre la implementación de verificación de programas hechos en ``Brainf**ck'' usando Interacion Trees.
+\end{abstract}
+
+\tableofcontents
+
+\clearpage
+
+\section{Motivación}
+Al momento de escuchar la idea de verificar un programa pensé en verificar código en ensamblador, pues supuse que sería el lenguaje más bajo que se podría verificar, luego pensandolo bien, sobretodo pensando en que mi computador es un ``Macbook Pro M2'' el cual tiene una arquitectura ARM, cuya arquitectura es muy distinta a la que yo conozco y entiendo que es la arquitectura x86 de Intel, la idea de verificar ensamblador luego me parecio \textit{``fuera de alcance''} pues existen muchas arquitecturas de computadores y no todas son iguales, y no todas tienen las mismas instrucciones. Esta idea también me llevo a pensar en verificar estructuras tales como ``FPGA (Field Programmable Gate Array)'' o ``ASIC (Application Specific Integrated Circuit)'' pues en el pasado había trabajado con estas, pero al igual que con la idea de verificar ensamblador lo encontré dificil.\\\\
+Replanteando mi idea recorde un video del ``MIT OpenCourseWare'' llamado ``5. C to Assembly'' en el cual hablan sobre como el lenguaje C se traduce a ensamblador, en este mencionan que para el compilador ``clang'' se utiliza un lenguaje intermedio llamado ``LLVM'' el cual es un lenguaje de bajo nivel que se utiliza para representar programas de lenguajes de alto nivel, es un lenguaje que permite a los compiladores realizar optimizaciones de código. La idea me pareció buena cuando me di cuenta que multiples lenguajes de programación como Rust \cite{rust}, C++ \cite{cpp}, Haskell \cite{haskell} y muchos otros más, utilizan LLVM como representación intermedia para sus compiladores, por lo que si se puede verificar un programa en LLVM, se puede verificar un programa en Rust, C++, Haskell, etc.\\
+
+\textit{\textbf{Nota:} Estuve un rato insistiendo en la idea de verificar ensamblador, pues no me gusta dejar ``morir'' ideas, encontré que varias empresas como Intel realizan verificación formal de sus procesadores, leyendo los documentos de estas empresas y presentaciones \ref{intel-verification} logré aclarar muchas de mis dudas sobre qué y cómo se puede hacer verificación formal} 
+
+\section{Detalles Técnicos y versionamiento}
+
+\subsection{Sistema Operativo y versiones}
+Se utilizó el sistema operativo ``MacOS Sonoma'' versión 14.1.1, con la versión del kernel ``Darwin23.1.0''. Se utilizó la versión de clang ``clang-15.0.0'' y la versión de llvm ``llvm-16.0.0''. Se utilizó la versión de OPAM ``2.1.5''. Se utilizó la versión de Coq ``8.15.2''. Se utilizó la versión de Ocaml ``4.13.1''.  Se utilizó make ``3.81''.
+
+\subsection{Instalación de herramientas}
+Las instrucciones que se encuentran en el repositorio de VeLLVM \cite{vellvm} son muy claras, sin embargo hay que seguirlas en un orden distinto al que se presentan, he aquí el orden para instalar VeLLVM:
+\begin{enumerate}
+    \item Instalar ``OPAM'' \cite{opam} (Ocaml Package Manager) con el gestor de paquetes en su sistema operativo, en mi caso ``Homebrew'' \cite{homebrew} con el comando ``brew install opam''.
+    \item Inicializar ``OPAM'' con el comando ``opam init''.
+    \item Agregar el repositorio de coq con el comando ``opam repo add coq-released https://coq.inria.fr/opam/released''.
+    \item Crear un Switch para la instalación de VeLLVM con el comando ``opam switch create vellvm ocaml-base-compiler.4.13.1''.
+    \item Clonar el repositorio y los submodulos con el comando ``git clone --recurse-submodules git@github.com:vellvm/vellvm.git'', para el caso de este repositorio clonar con el comando ``git clone --recurse-submodules git@github.com:kurtcovayne/cm0081-2023-2-lab2.git''.
+    \item Ingresar al directorio src con el comando ``cd vellvm/src''.
+    \item Instalar las dependencias con el comando ``make opam''.
+    \item Para compilar tuve muchos problemas, pues tal parece que el make no está compilando las cosas en orden, para arreglar esto recomiendo un truco que es ejecutar varias veces el comando ``make -j<n>'' donde ``n'' e ir aumentando el n en caso de que falle, en mi caso ``n'' llegó a ser 24.
+\end{enumerate}
+
+\subsection{Verificación de programas en representación intermedia de LLVM}
+Para verificar un programa en representación intermedia de LLVM se debe seguir los siguientes pasos:
+\begin{enumerate}
+    \item Crear un archivo con extensión ``.ll'' con el código en representación intermedia de LLVM.
+    \item Compilar el archivo ``.ll'' con el comando ``clang -S -emit-llvm -o <nombre de archivo de salida> <nombre de archivo de entrada>''.
+    \item Yo tuve problemas en ``MacOS Sonoma'' pues clang agrega modificadores a los parametros cuando ejecuta la instrucción call \ref{clang-call}{\color{blue} \textit{(Como arreglaro)}}, también llvm agrega modificadores a los loops y VeLLVM no logra reconocerlos \ref{llvm-loop}{\color{blue} \textit{(Como arreglarlo)}}, por lo que se debe arreglar el archivo ``.ll'' para que no tenga estos modificadores.
+    \item Agregar comandos de verificación al archivo ``.ll'' \ref{verificacion}{\color{blue} \textit{(Como hacerlo)}}
+    \item Ejecutar el comando ``./vellvm --test-file <nombre de archivo de entrada>''.
+\end{enumerate}
+
+\subsection{Programas de interés}
+Se verificaron los siguientes programas:
+\begin{enumerate}
+    \item Programa que realiza potenciación binaria de un número.
+    \item Programa que calcula el gcd de dos números usando el algoritmo extendido de Euclides.
+    \item Programa que calcula si existe una solución entera para la ecuación diofántica $ax + by = c$.
+    \item Programa que calcula la multiplicación de dos números usando la transformada rápida de Fourier en un algoritmo conocido como ``Schönhage-Strassen algorithm''.
+\end{enumerate}
+Los programas en C se pueden encontrar en el repositorio \cite{repo}.
+
+\subsection{Programas de futuro interes}
+Sería interesante plantear verificación de programas que planteen problemas de ecuaciones diferenciales, donde las ecuaciones se sabe que tienen una solución para un espacio de entradas, también estaría interesante poder plantear programas con precondiciones sobre un grafo, y realizar algoritmos sobre este. Los ejemplos que se me ocurren son los siguientes:
+\end{enumerate}
+    \item Programa que calcula la solución de una ecuación diferencial de primer orden para cualquier entrada en un intervalo.
+    \item Programa que encuentra minimo cubrimiento en un grafo, por ejemplo con precondiciones de que es un arbol, o de que es k-coloreable, etc, y que se pueda demostrar formalmente la terminación y complejidad del algoritmo (a nivel de implementación).
+\end{enumerate}
+
+
+\printbibliography
+\end{document}
