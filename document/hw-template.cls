@@ -62,6 +62,10 @@
         Nombre: John Alejandro González \\
         Código: 1013336184
     \end{flushleft}
+    \begin{flushleft}
+        Nombre: Luis Alejandro Baena \\
+        Código: 1023628877
+    \end{flushleft}
 
     \begin{flushright}\vspace{-15mm}
         \includegraphics[height=2cm]{images/logo.png}
