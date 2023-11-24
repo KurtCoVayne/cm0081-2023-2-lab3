@@ -1,0 +1,19 @@
+FROM debian:bookworm
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+        git \
+        gnupg \
+        pkg-config \
+        sudo \
+        unzip \
+        wget \
+        zip \
+        zlib1g-dev \
+        opam \
+    ; \
+    rm -rf /var/lib/apt/lists/*
