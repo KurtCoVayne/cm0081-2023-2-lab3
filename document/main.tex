@@ -104,14 +104,10 @@ presentan, he aquí el orden para instalar VeLLVM:
     de paquetes en su sistema operativo, en mi caso ``Homebrew'' \cite{homebrew}
     con el comando ``brew install opam''.
     \item Inicializar ``OPAM'' con el comando ``opam init''.
-    \item Agregar el repositorio de coq con el comando ``opam repo
-    add coq-released https://coq.inria.fr/opam/released''.
     \item Crear un Switch para la instalación de VeLLVM con el comando 
     ``opam switch create vellvm ocaml-base-compiler.4.13.1''.
-    \item Clonar el repositorio y los submodulos con el comando 
-    ``git clone --recurse-submodules git@github.com:vellvm/vellvm.git'', para el
-     caso de este repositorio clonar con el comando ``git clone --recurse-submodules
-      git@github.com:kurtcovayne/cm0081-2023-2-lab3.git''.
+    \item Agregar el repositorio de coq con el comando ``opam repo
+    add coq-released https://coq.inria.fr/opam/released''.
     \item Ingresar al directorio src con el comando ``cd vellvm/src''.
     \item Instalar las dependencias con el comando ``make opam''.
     \item Para compilar tuve muchos problemas, pues tal parece que el make no está
