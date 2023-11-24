@@ -27,18 +27,21 @@
 
 \maketitle
 \begin{abstract}
-    En este laboratorio se discute sobre la verificación de programas en representación
-    intermedia de LLVM, el cual es un lenguaje de bajo nivel que se utiliza para
-    representar programas de lenguajes de alto nivel, es un lenguaje que permite
-    a los compiladores realizar optimizaciones de código. \\
-    Se utiliza la herramienta formal \textit{VeLLVM} creada por \textit{DeepSpec} para
-    verificar programas en representación intermedia de LLVM. \\
-    Se discute la motivación del uso de las herramientas mencionadas, en los lenguajes
-    mencionados. \\ 
-    Se discute la posibilidad de verificar programas que planteen problemas de teoría
-    de números, ecuaciones diferenciales y grafos. \\
-    Se discute la posibilidad de revisar y estudiar formalmente sobre la implementación
-    de verificación de programas hechos en ``Brainf**ck'' usando Interaction Trees.
+    En este laboratorio se discute sobre la verificación de programas en
+    representación intermedia de LLVM, el cual es un lenguaje de bajo nivel
+    que se utiliza para representar programas de lenguajes de alto nivel,
+    es un lenguaje que permite a los compiladores realizar optimizaciones
+    de código. \\
+    Se utiliza la herramienta formal \textit{VeLLVM} creada por
+    \textit{DeepSpec} para verificar programas en representación intermedia
+    de LLVM. \\
+    Se discute la motivación del uso de las herramientas mencionadas, en 
+    los lenguajes mencionados. \\ 
+    Se discute la posibilidad de verificar programas que planteen problemas
+    de teoría de números, ecuaciones diferenciales y grafos. \\
+    Se discute la posibilidad de revisar y estudiar formalmente sobre la 
+    implementación de verificación de programas hechos en ``Brainf**ck''
+    usando Interaction Trees.
 \end{abstract}
 
 \tableofcontents
@@ -72,13 +75,12 @@ La idea cobró fuerza cuando nos percatamos de que múltiples lenguajes de
 programación, como Rust \cite{rust}, C++ \cite{cpp}, Haskell \cite{haskell}
 y muchos otros, emplean LLVM como representación intermedia para sus
 compiladores. Por lo tanto, si es posible verificar un programa en LLVM,
-también es posible hacerlo para Rust, C++, Haskell, entre otros.
+también es posible hacerlo para Rust, C++, Haskell, entre otros. \\
 
 \textit{\textbf{Nota:} Persistimos en la idea de realizar la verificación
-de ensamblador, ya que nos resulta inconcebible abandonar ideas sin explorar
-a fondo. Durante esta persistencia, descubrimos que diversas empresas,
-incluida Intel, llevan a cabo la verificación formal de sus procesadores.
-Al revisar detenidamente los documentos y presentaciones de estas empresas
+de ensamblador. Descubrimos que diversas empresas,incluida Intel,
+llevan a cabo la verificación formal de sus procesadores. Al revisar
+detenidamente los documentos y presentaciones de estas empresas
 \cite{intel-verification}, logramos obtener claridad sobre las posibilidades
 y metodologías relacionadas con la verificación formal. Este proceso no
 solo contribuyó a disipar incertidumbres, sino que también proporcionó un
@@ -94,47 +96,49 @@ versión del kernel ``Darwin23.1.0''. Se utilizó la versión de clang
 versión de OPAM ``2.1.5''. Se utilizó la versión de Coq ``8.15.2''. Se
 utilizó la versión de Ocaml ``4.13.1''.  Se utilizó make ``3.81''.
 
-\subsection{Instalación de herramientas}
-Las instrucciones que se encuentran en el repositorio de VeLLVM \cite{vellvm}
-son muy claras, sin embargo hay que seguirlas en un orden distinto al que se
-presentan, he aquí el orden para instalar VeLLVM:
+\section{Instalación de herramientas}
+Las instrucciones que se encuentran en el repositorio de VeLLVM 
+\cite{vellvm} son muy claras, sin embargo hay que seguirlas en un orden
+distinto al que se presentan, he aquí el orden para instalar VeLLVM:
 
 \begin{enumerate}
     \item Instalar ``OPAM'' \cite{opam} (Ocaml Package Manager) con el gestor
     de paquetes en su sistema operativo, en mi caso ``Homebrew'' \cite{homebrew}
     con el comando ``brew install opam''.
     \item Inicializar ``OPAM'' con el comando ``opam init''.
-    \item Crear un Switch para la instalación de VeLLVM con el comando 
-    ``opam switch create vellvm ocaml-base-compiler.4.13.1''.
     \item Agregar el repositorio de coq con el comando ``opam repo
     add coq-released https://coq.inria.fr/opam/released''.
-    \item Ingresar al directorio src con el comando ``cd vellvm/src''.
+    \item Crear un Switch para la instalación de VeLLVM con el comando 
+    ``opam switch create vellvm ocaml-base-compiler.4.13.1''.
+    \item Clonar el repositorio y los submodulos con el comando \\
+    ``git clone {-}{-}recurse-submodules git@github.com:kurtcovayne/cm0081-2023-2-lab3.git''.
+    \item Ingresar al directorio src con el comando ``cd cm0081-2023-2-lab3/vellvm/src''.
     \item Instalar las dependencias con el comando ``make opam''.
-    \item Para compilar tuve muchos problemas, pues tal parece que el make no está
-    compilando las cosas en orden, para arreglar esto recomiendo un truco que es
+    \item Para compilar hubieron muchos problemas, pues tal parece que el make no está
+    compilando las cosas en orden, lo que nos sirvió para arreglar esto fue
     ejecutar varias veces el comando ``make -j<n>'' donde ``n'' e ir aumentando
-    el n en caso de que falle, en mi caso ``n'' llegó a ser 24.
+    el n en caso de que falle, en nuestro caso ``n'' llegó a ser 24.
 \end{enumerate}
 
-\subsection{Verificación de programas en representación intermedia de LLVM}
-Para verificar un programa en representación intermedia de LLVM se debe seguir los siguientes pasos:
+\section{Verificación de programas en representación intermedia de LLVM}
+
+Para verificar un programa en representación intermedia de LLVM se debe
+seguir los siguientes pasos:
+
 \begin{enumerate}
     \item Crear un archivo con extensión ``.ll'' con el código en representación
     intermedia de LLVM.
     \item Compilar el archivo ``.ll'' con el comando ``clang -S -emit-llvm -o
     <nombre de archivo de salida> <nombre de archivo de entrada>''.
-    \item Yo tuve problemas en ``MacOS Sonoma'' pues clang agrega modificadores
-    a los parametros cuando ejecuta la instrucción call
-    \ref{clang-call}{\color{blue} \textit{(Como arreglaro)}}, también llvm agrega
-    modificadores a los loops y VeLLVM no logra reconocerlos
-    \ref{llvm-loop}{\color{blue} \textit{(Como arreglarlo)}}, por lo que se debe
+    \item Se tuvó problemas en ``MacOS Sonoma'' pues clang agrega modificadores
+    a los parametros cuando ejecuta la instrucción call, también llvm agrega
+    modificadores a los loops y VeLLVM no logra reconocerlos, por lo que se debe
     arreglar el archivo ``.ll'' para que no tenga estos modificadores.
     \item Agregar comandos de verificación al archivo ``.ll''
-    \ref{verificacion}{\color{blue} \textit{(Como hacerlo)}}
     \item Ejecutar el comando ``./vellvm --test-file <nombre de archivo de entrada>''.
 \end{enumerate}
 
-\subsection{Programas de interés}
+\section{Programas de interés}
 Se verificaron los siguientes programas:
 \begin{enumerate}
     \item Programa que realiza potenciación binaria de un número.
@@ -146,23 +150,38 @@ Se verificaron los siguientes programas:
     rápida de Fourier en un algoritmo conocido como ``Schönhage-Strassen algorithm''.
 \end{enumerate}
 
-Los programas en C se pueden encontrar en el repositorio \href{https://github.com/KurtCoVayne/cm0081-2023-2-lab3/tree/main/src}.
+Los programas en C se pueden encontrar en este \href{https://github.com/KurtCoVayne/cm0081-2023-2-lab3/tree/main/src}{repositorio} 
 
-\subsection{Programas de futuro interes}
-Sería interesante plantear verificación de programas que planteen problemas
-de ecuaciones diferenciales, donde las ecuaciones se sabe que tienen una solución
-para un espacio de entradas, también estaría interesante poder plantear programas
-con precondiciones sobre un grafo, y realizar algoritmos sobre este. Los ejemplos
-que se me ocurren son los siguientes:
+\section{Programas de futuro interes}
+Será particularmente interesante abordar problemas de ecuaciones diferenciales,
+donde se pueda verificar la solución para un espacio de entradas dado. Además,
+se buscará extender la aplicación de la verificación formal a programas con
+precondiciones sobre un grafo, permitiendo la formulación y verificación de
+algoritmos que operan en este tipo de estructuras. \\
+
+Algunos ejemplos concretos de programas futuros incluyen:
 
 \begin{enumerate}
-    \item Programa que calcula la solución de una ecuación diferencial de primer
-    orden para cualquier entrada en un intervalo.
-    \item Programa que encuentra mínimo cubrimiento en un grafo, por ejemplo con
-    precondiciones de que es un árbol, o de que es k-coloreable, etc. Y que se pueda
-    demostrar formalmente la terminación y complejidad del algoritmo (a nivel de implementación).
+    \item Desarrollo de un programa que calcule la solución de una ecuación
+    diferencial de primer orden, abarcando cualquier entrada dentro de un
+    intervalo determinado.
+    \item Implementación de un programa que encuentre el mínimo cubrimiento
+    en un grafo, estableciendo precondiciones como la condición de ser un
+    árbol o ser k-coloreable. Se buscará demostrar formalmente la terminación 
+    y complejidad del algoritmo a nivel de implementación
 \end{enumerate}
 
+\section{Verificación de programas en Brainf**k}
+En perspectiva, también se contempla la implementación de un programa de
+verificación formal en el lenguaje Brainf**k, un lenguaje de programación
+minimalista que se caracteriza por ser Turing completo. Este enfoque abrirá
+la posibilidad de explorar la verificación formal en un contexto más
+desafiante y peculiar, aprovechando las capacidades de este lenguaje para
+expresar algoritmos de manera concisa. \\
+
+La inclusión de programas en Brainf**k ampliará el alcance de la verificación
+formal, ofreciendo una perspectiva única y desafiante en la validación 
+rigurosa de algoritmos en lenguajes de programación menos convencionales.
 
 \printbibliography
 \end{document}
